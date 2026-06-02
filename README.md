@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document is the engineering counterpart to **Sections 8–12** of the capstone paper. Each subsection maps a paper section to the concrete code in this repo.
+This project examines how a permissioned blockchain-based RWA tokenization framework could be mapped to a consumer neobank's core products such as checking accounts, debit rewards, and credit lines, with a human-in-the-loop governance model to preserve consumer autonomy.
 
 ## Layered model (six logical layers)
 
