@@ -1,0 +1,23 @@
+%% Flow Chart B — Overdraft Protection
+%% Reference: Capstone §9.5 + §11 Flow Chart B
+
+flowchart TD
+  START(["transaction_posted webhook"]) --> BAL{"Post-tx balance<br/>< $25 threshold?"}
+  BAL -- "No" --> DONE([Allow tx])
+  BAL -- "Yes" --> SAV{"Savings > $50?"}
+  SAV -- "Yes" --> R1["Response 1: Auto-transfer<br/>from tokenized HY Savings<br/>(1-tap cancel via push)"]
+  R1 --> LOG[(Audit log<br/>on-chain event)]
+  SAV -- "No" --> SPOT{"RWA-backed<br/>SpotMe available?"}
+  SPOT -- "Yes" --> R2["Response 2: Tokenized<br/>SpotMe micro-advance<br/>(0% APR, repaid on next DD)"]
+  R2 --> LOG
+  SPOT -- "No" --> R3["Response 3: HITL push alert<br/>'Tap to review options'"]
+  R3 --> WAIT{"Consumer<br/>responds?"}
+  WAIT -- "Approve" --> R4["Execute approved action"]
+  WAIT -- "Deny / timeout" --> NOOP(["No automated action.<br/>Overdraft may occur."])
+  R4 --> LOG
+  LOG --> END(["Settle on Besu PoA"])
+
+  classDef warn fill:#964219,color:#fff;
+  classDef safe fill:#437A22,color:#fff;
+  class R3,NOOP warn;
+  class R1,R2,R4,LOG,END safe;

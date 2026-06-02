@@ -1,0 +1,77 @@
+%% System Architecture — RWA Tokenization & Programmable Finance Platform
+%% Renders on GitHub natively (Mermaid).
+
+flowchart TB
+  subgraph Consumer ["L1 · Consumer Engagement"]
+    APP["Chime-style React App<br/>iOS / Android / Web"]
+    HITL_UI["HITL Override Console"]
+  end
+
+  subgraph Gateway ["L2 · API Gateway (OAuth 2.0 + FDX 6.0)"]
+    GW["Express Gateway<br/>JWT scopes · rate limit · HMAC verify"]
+    CONSENT["Consent Service<br/>(CFPB Rule 1033)"]
+  end
+
+  subgraph Orch ["L3 · RWA Orchestration Service"]
+    BRIDGE["Galileo → EVM Bridge"]
+    PFE["Programmable Finance Engines<br/>(Overdraft · Late-fee · Debt-payoff)"]
+    HITL_SVC["HITL Governor<br/>(24h review window)"]
+  end
+
+  subgraph Intel ["L4 · Intelligence Layer"]
+    CREDIT["XGBoost Thin-file Credit Model<br/>+ SHAP explainability"]
+    YIELD_RL["RL Yield Optimizer"]
+    ANOMALY["Isolation Forest<br/>Anomaly Detector"]
+  end
+
+  subgraph Chain ["L5 · Blockchain Execution"]
+    direction LR
+    BESU[("Hyperledger Besu (PoA)")]
+    FAB[("Hyperledger Fabric")]
+    DRT["DepositReceiptToken.sol"]
+    AMM["RewardAssetAMM.sol"]
+    RCL["RWACreditLine.sol"]
+    GOV["HITLGovernor.sol"]
+    BESU --- DRT
+    BESU --- AMM
+    BESU --- RCL
+    BESU --- GOV
+    FAB --- FCC["rwa-cc (Go chaincode)"]
+  end
+
+  subgraph Trust ["L6 · Trust Anchor"]
+    ORACLE["Chainlink-style Oracle<br/>(T-bill yield, FX, income)"]
+    KYT["Chainalysis KYT mock<br/>(AML screening)"]
+    HSM["AWS CloudHSM<br/>2-of-3 multisig"]
+    USDC["Circle USDC Mint API mock"]
+  end
+
+  subgraph External ["External Systems"]
+    GALILEO["Galileo Webhook Stream<br/>(mock)"]
+    BANK["Sponsor Bank<br/>(Bancorp / Stride)"]
+  end
+
+  APP -->|"REST + WS<br/>OAuth 2.0"| GW
+  HITL_UI --> GW
+  GALILEO -->|"HMAC-SHA256<br/>signed webhook"| GW
+  GW --> CONSENT
+  GW --> BRIDGE
+  BRIDGE --> PFE
+  PFE --> HITL_SVC
+  PFE --> CREDIT
+  PFE --> YIELD_RL
+  BRIDGE --> ANOMALY
+  BRIDGE -->|"signed tx"| BESU
+  BRIDGE -->|"fabric-network SDK"| FAB
+  YIELD_RL --> ORACLE
+  ORACLE --> BESU
+  BRIDGE --> KYT
+  KYT -.->|"flag → freeze"| BRIDGE
+  BRIDGE --> HSM
+  BANK --> USDC
+  USDC --> BESU
+
+  classDef build fill:#01696F,color:#fff,stroke:#0C4E54;
+  classDef buy fill:#7A7974,color:#fff,stroke:#28251D;
+  class BRIDGE,PFE,HITL_SVC,CREDIT,YIELD_RL,ANOMALY,DRT,AMM,RCL,GOV,FCC,APP,HITL_UI build;
+  class ORACLE,KYT,HSM,USDC,GALILEO,BANK buy;

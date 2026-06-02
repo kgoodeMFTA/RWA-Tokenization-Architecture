@@ -1,0 +1,17 @@
+%% Flow Chart C — Late Fee Prevention (scheduled trigger)
+%% Reference: Capstone §9.5 + §11 Flow Chart C
+
+flowchart TD
+  CRON(["Daily cron @ 02:00 UTC<br/>scan all linked bills"]) --> READ["Read upcoming bills<br/>via FDX 6.0 (CFPB 1033)"]
+  READ --> CHK{"Due in ≤ 3 days?"}
+  CHK -- "No" --> WAIT([Re-check tomorrow])
+  CHK -- "Yes" --> BAL{"Sufficient<br/>checking balance?"}
+  BAL -- "Yes" --> STAGE["Stage payment<br/>send confirmation push"]
+  STAGE --> HITL24{"24h HITL window<br/>cancelled?"}
+  HITL24 -- "No" --> EXEC["Execute ACH on due date"]
+  HITL24 -- "Yes" --> CANCEL([Cancel scheduled payment])
+  BAL -- "No" --> WATERFALL["Waterfall:<br/>1. Yield tokens<br/>2. RWA credit line"]
+  WATERFALL --> ML["ML income predictor:<br/>next paycheck date"]
+  ML --> RESCHED["Reschedule to<br/>predicted DD date<br/>+ proactive push alert"]
+  RESCHED --> HITL24
+  EXEC --> LOG[(On-chain audit log)]

@@ -1,0 +1,26 @@
+%% Flow Chart A — Payroll Direct Deposit → Yield Token Mint
+%% Reference: Capstone §11, Flow Chart A
+
+sequenceDiagram
+  autonumber
+  participant EMP as Employer ACH
+  participant GAL as Galileo Core
+  participant GW as API Gateway
+  participant ORC as RWA Orchestration
+  participant ORACLE as Chainlink Oracle (mock)
+  participant KYT as Chainalysis KYT (mock)
+  participant DRT as DepositReceiptToken.sol (Besu)
+  participant APP as Chime App
+
+  EMP->>GAL: ACH credit $1,250
+  GAL->>GW: POST /webhooks/galileo<br/>event=directDeposit.credited<br/>HMAC-SHA256
+  GW->>GW: Verify HMAC + nonce + 5-min window
+  GW->>ORC: Validated event
+  ORC->>ORACLE: GET current 4-week T-bill yield
+  ORACLE-->>ORC: 4.82% APY
+  ORC->>KYT: Screen source address
+  KYT-->>ORC: cleared
+  ORC->>DRT: mintFor(account, 1250e18, 0.0482)
+  DRT-->>ORC: TokenMinted(event_id, token_id)
+  ORC->>APP: WebSocket push<br/>"$1,250.00 earning 4.82% APY"
+  Note over ORC,APP: Consumer never sees<br/>token_id, gas, or wallet addr
